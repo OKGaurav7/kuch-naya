@@ -14,14 +14,16 @@ def generate_output():
     output_df = merged_output_df[selected_columns]
     output_df=output_df.drop_duplicates()
     new_columns = ['CBBT_PX_ASK', 'Economic Impact', 'LQA (Liq Score)', 'Days Elapsed']
-    custom_column_order = ['currentObligorRdmId','currentObligorFullName', 'CashScore','Operation Type', 'Trade Date', 'Trade Price','CBBT_PX_ASK', 'Economic Impact', 'LQA (Liq Score)','Value Date','Days Elapsed','Primary Original Quantity', 'Settlement Instrument Name', 'ISIN Primary Instrument Reference', 'Primary Instrument Long Name', 'SMO Trade Reference', 'Internal Status Narrative', 'Sales Person Name']
+    output_df.rename(columns={'currentObligorRdmId':'Obg Id', 'currentObligorFullName':'Client'},inplace=True)
+    custom_column_order = ['Obg Id','Client', 'CashScore','Operation Type', 'Trade Date', 'Trade Price','CBBT_PX_ASK', 'Economic Impact', 'LQA (Liq Score)','Value Date','Days Elapsed','Primary Original Quantity', 'Settlement Instrument Name', 'ISIN Primary Instrument Reference', 'Primary Instrument Long Name', 'SMO Trade Reference', 'Internal Status Narrative', 'Sales Person Name']
     
     for i, col in enumerate(new_columns, start=1):
-        output_df.insert(output_df.columns.get_loc('currentObligorRdmId') + i, col, '')
+        output_df.insert(output_df.columns.get_loc('Obg Id') + i, col, '')
 
     output_df['Trade Date'] = pd.to_datetime(output_df['Trade Date']).dt.strftime('%Y-%m-%d')
     output_df['Value Date'] = pd.to_datetime(output_df['Value Date']).dt.strftime('%Y-%m-%d')
 
+    #output_df.rename(columns={'currentObligorRdmId':'Obg Id', 'currentObligorFullName':'Client'},inplace=True)
     
     #output_df['Economic Impact'] = output_df['Economic Impact'].astype(int)
     #output_df['LQA (Liq Score)'] = output_df['LQA (Liq Score)'].astype(int)
@@ -31,7 +33,7 @@ def generate_output():
     output_df['Value Date'] = pd.to_datetime(output_df['Value Date'])
     today = datetime.today()
     output_df['Days Elapsed'] = (today - output_df['Value Date']).dt.days - 1
-    output_df[['currentObligorRdmId', 'CashScore']] = output_df[['currentObligorRdmId', 'CashScore']].fillna('NA')
+    output_df[['Obg Id', 'CashScore']] = output_df[['Obg Id', 'CashScore']].fillna('NA')
     output_df = output_df[custom_column_order]
     output_df['CBBT_PX_ASK'] = "=" + 'BDP("' + output_df['ISIN Primary Instrument Reference'] + ' Corp",' + "G1" + ")"
     output_df['LQA (Liq Score)']= "="+'BDP("'+ output_df['ISIN Primary Instrument Reference'] + ' Corp",' + '"LQA_LIQUIDITY_SCORE")'
@@ -153,7 +155,7 @@ def generate_output():
                 break
 
         if settlement_column:
-            ws.column_dimensions[get_column_letter(settlement_column)].width = 11  
+            ws.column_dimensions[get_column_letter(settlement_column)].width = 17  
 
         isin_column = None
         for cell in ws[1]:
@@ -162,7 +164,7 @@ def generate_output():
                 break
 
         if isin_column:
-            ws.column_dimensions[get_column_letter(isin_column)].width = 20  
+            ws.column_dimensions[get_column_letter(isin_column)].width = 21  
         instrument_name_column = None
         for cell in ws[1]:
             if cell.value == 'Primary Instrument Long Name':
@@ -180,7 +182,7 @@ def generate_output():
                 break
 
         if smo_trade_column:
-            ws.column_dimensions[get_column_letter(smo_trade_column)].width = 10  
+            ws.column_dimensions[get_column_letter(smo_trade_column)].width = 11  
 
         # Apply conditional formatting and adjust column width for 'Internal Status Narrative'
         internal_status_column = None
