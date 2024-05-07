@@ -1,58 +1,30 @@
-def generate_output():
-    # Read data from master.xlsx, Takara.xlsx, and prodman.xlsx
-    master = pd.read_excel('master.xlsx')
-    Takara = pd.read_excel('Takara.xlsx')
-    prodman = pd.read_excel('prodman.xlsx')
+import os
+import win32com.client
 
-    abc_df = pd.merge(master, Takara, left_on='Counterparty RDM Id', right_on='externalId', how='left')
-    merged_output_df = pd.merge(abc_df, prodman, left_on='currentObligorRdmId', right_on='ObligorId', how='left')
+vba_file = r"C:\Users\Gaurav\Desktop\GauravPython\Module1.bas"
+target_file = r"C:\Users\Gaurav\Desktop\GauravPython\new.xlsm"
 
-    # Define selected columns
-    selected_columns = ['Operation Type', 'Trade Date', 'Trade Price', 'Value Date', 'Primary Original Quantity', 'Settlement Instrument Name', 'ISIN Primary Instrument Reference', 'Primary Instrument Long Name', 'SMO Trade Reference', 'Internal Status Narrative', 'Sales Person Name','currentObligorRdmId', 'currentObligorFullName', 'CashScore']
+# Create an instance of the Excel application
+excel = win32com.client.Dispatch("Excel.Application")
 
-    output_df = merged_output_df[selected_columns]
-    output_df=output_df.drop_duplicates()
-    new_columns = ['CBBT_PX_ASK', 'Economic Impact', 'LQA (Liq Score)', 'Days Elapsed']
-    output_df.rename(columns={'currentObligorRdmId':'Obg Id', 'currentObligorFullName':'Client'},inplace=True)
-    custom_column_order = ['Obg Id','Client', 'CashScore','Operation Type', 'Trade Date', 'Trade Price','CBBT_PX_ASK', 'Economic Impact', 'LQA (Liq Score)','Value Date','Days Elapsed','Primary Original Quantity', 'Settlement Instrument Name', 'ISIN Primary Instrument Reference', 'Primary Instrument Long Name', 'SMO Trade Reference', 'Internal Status Narrative', 'Sales Person Name']
-    
-    for i, col in enumerate(new_columns, start=1):
-        output_df.insert(output_df.columns.get_loc('Obg Id') + i, col, '')
+# Open the target file
+target_workbook = excel.Workbooks.Open(target_file)
 
-    output_df['Trade Date'] = pd.to_datetime(output_df['Trade Date']).dt.strftime('%Y-%m-%d')
-    output_df['Value Date'] = pd.to_datetime(output_df['Value Date']).dt.strftime('%Y-%m-%d')
+# Add a new VBA module to the target workbook
+vba_module = target_workbook.VBProject.VBComponents.Add(1)
 
-    # Apply thousand separators to "Primary Original Quantity"
-    output_df['Primary Original Quantity'] = output_df['Primary Original Quantity'].apply(lambda x: "{:,}".format(x))
+# Read the VBA code from the .bas file
+with open(vba_file, "r") as f:
+    vba_code = f.read()
 
-    # Write data to Excel file
-    output_filename = 'output.xlsx'
-    with pd.ExcelWriter(output_filename) as writer:
-        output_df.to_excel(writer, index=False, sheet_name='All Data')
-        # Filter data where operation type is Buy
-        buy_df = output_df[output_df['Operation Type'].str.contains('BUY')]
-        buy_df.to_excel(writer, index=False, sheet_name='Buy Data')
-        # Filter data where operation type is Sell
-        sell_df = output_df[output_df['Operation Type'].str.contains('SELL')]
-        sell_df.to_excel(writer, index=False, sheet_name='Sell Data')
+# Insert the VBA code into the new module
+vba_module.CodeModule.AddFromString(vba_code)
 
-    # Open excel and adjust alignment
-    wb = load_workbook(output_filename)
-    ws_all_data = wb['All Data']
-    for column in ws_all_data.columns:
-        max_length = 0
-        column = [(cell.value, cell.alignment) for cell in column]
-        for cell in column:
-            if cell[0]:
-                try:
-                    if len(str(cell[0])) > max_length:
-                        max_length = len(cell[0])
-                except:
-                    pass
-        adjusted_width = (max_length + 2) * 1.2
-        ws_all_data.column_dimensions[get_column_letter(column[0][0].column)].width = adjusted_width
-        for cell in column:
-            if cell[0]:
-                cell[0].alignment = Alignment(horizontal="right")
-    wb.save(output_filename)
-    
+# Save the target file with the new VBA code
+target_workbook.Save()
+
+# Close the target workbook
+target_workbook.Close(SaveChanges=True)
+
+# Quit the Excel application
+excel.Quit()
