@@ -29,3 +29,31 @@ target_workbook.Close(SaveChanges=True)
 
 # Quit the Excel application
 excel.Quit()
+
+#______________________________________________________________________________________
+
+import win32com.client
+
+# Replace with the path to your Excel file and macro name
+excel_file = r"C:\Users\Gaurav\Desktop\GauravPython\new.xlsm"
+macro_name = "Macro1"
+
+# Create an instance of the Excel application
+excel = win32com.client.Dispatch("Excel.Application")
+
+# Make the Excel application visible (optional)
+excel.Visible = True
+
+# Open the Excel file
+workbook = excel.Workbooks.Open(excel_file)
+
+# Run a specific macro
+excel.Application.Run("'" + excel_file + "'!" + macro_name)
+
+# Save and close the workbook
+workbook.Save()
+workbook.Close()
+
+# Quit the Excel application
+excel.Quit()
+
