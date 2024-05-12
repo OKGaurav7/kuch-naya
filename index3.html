@@ -1,4 +1,37 @@
-    # Apply borders to all cells
-    for row in ws.iter_rows():
-        for cell in row:
-            cell.border = border
+import cv2
+import pytesseract
+import pandas as pd
+
+# Path to the image file
+image_path = 'car.jpg'
+
+# Read the image using OpenCV
+image = cv2.imread(image_path)
+
+# Convert the image to grayscale
+gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+# Apply thresholding to convert the image to binary
+_, binary_image = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+
+# Use Pytesseract to perform OCR on the binary image
+text = pytesseract.image_to_string(binary_image)
+
+# Split the text into lines
+lines = text.split('\n')
+
+# Remove empty lines
+lines = [line for line in lines if line.strip()]
+
+
+# Split lines into rows based on whitespace
+rows = [line.split() for line in lines]
+
+# Create a DataFrame from the rows
+df = pd.DataFrame(rows)
+
+# Save DataFrame to an Excel file
+excel_file_path = 'table_data.xlsx'
+df.to_excel(excel_file_path, index=False)
+
+print("Table data saved to:", excel_file_path)
