@@ -24,7 +24,7 @@ lines = text.split('\n')
 lines = [line for line in lines if line.strip()]
 
 # Split lines into columns based on whitespace, considering the spacing condition
-columns = [[] for _ in range(max(map(len, lines.split())))]
+columns = [[] for _ in range(max(map(len, lines)))]
 for line in lines:
     words = line.split()
     current_column = 0
