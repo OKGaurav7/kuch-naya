@@ -1,66 +1,43 @@
+
 import cv2
 import pytesseract
 import pandas as pd
 import os
-from openpyxl import Workbook
 
 class TableExtractor:
-    def __init__(self, image_path):
-        self.image_path = image_path
-        self.image = cv2.imread(self.image_path)
-        self.extracted_text = None
+    def __init__(self, folder_path):
+        self.folder_path = folder_path
+        self.extracted_text = []
 
-    def preprocess_image(self):
-        gray_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+    def preprocess_image(self, image):
+        gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         _, binary_image = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
         return binary_image
 
     def perform_ocr(self, binary_image):
-        self.extracted_text = pytesseract.image_to_string(binary_image)
+        return pytesseract.image_to_string(binary_image)
 
-    def save_to_excel(self, excel_path, current_page):
-        workbook = Workbook()
-        worksheet = workbook.active
+    def extract_from_images(self):
+        for file in sorted(os.listdir(self.folder_path)):
+            if file.startswith("page") and file.endswith(".jpg"):
+                image_path = os.path.join(self.folder_path, file)
+                image = cv2.imread(image_path)
+                binary_image = self.preprocess_image(image)
+                extracted_text = self.perform_ocr(binary_image)
+                self.extracted_text.append(extracted_text)
+                print("Text extracted from:", file)
 
-        rows = [row.split('\n') for row in self.extracted_text.split('\n\n')]
-        for row_index, row in enumerate(rows, start=1):
-            for col_index, cell in enumerate(row, start=1):
-                worksheet.cell(row=row_index, column=col_index, value=cell)
+    def save_to_csv(self, csv_path):
+        rows = [row.split('\n') for text in self.extracted_text for row in text.split('\n\n')]
+        df = pd.DataFrame(rows)
+        df.to_csv(csv_path, index=False)
+        print("Data extracted and saved to:", csv_path)
 
-        workbook.save(excel_path)
-        print(f"Data extracted from {self.image_path} and saved to {excel_path}")
-        print(f"Current page extracted: {current_page}")
-
-    def run_extraction(self, excel_path, current_page):
-        binary_image = self.preprocess_image()
-        self.perform_ocr(binary_image)
-        self.save_to_excel(excel_path, current_page)
+    def run_extraction(self, csv_path):
+        self.extract_from_images()
+        self.save_to_csv(csv_path)
 
 if __name__ == "__main__":
-    # Folder containing the images
-    folder_path = '/path/to/folder'
-
-    # Output Excel folder
-    output_folder = '/path/to/output'
-
-    # Create output folder if it doesn't exist
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
-
-    # Iterate through files in the folder
-    for idx, filename in enumerate(os.listdir(folder_path)):
-        if filename.startswith("page") and filename.endswith(".jpg"):
-            image_path = os.path.join(folder_path, filename)
-            output_excel = os.path.join(output_folder, f"{os.path.splitext(filename)[0]}.xlsx")
-
-            # Extract tables from each image and save to Excel
-            extractor = TableExtractor(image_path=image_path)
-            extractor.run_extraction(excel_path=output_excel, current_page=filename)
-
-            # Leave 2 blank rows in Excel after each extraction
-            if idx < len(os.listdir(folder_path)) - 1:
-                workbook = Workbook()
-                worksheet = workbook.active
-                for _ in range(2):
-                    worksheet.append([])
-                workbook.save(output_excel)
+    # Replace 'folder_path' and 'output_table.csv' with your folder path containing images and desired CSV file path
+    extractor = TableExtractor(folder_path='folder_containing_images')
+    extractor.run_extraction(csv_path='output_table.csv')
