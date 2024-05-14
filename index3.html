@@ -1,37 +1,34 @@
 import cv2
 import pytesseract
 import pandas as pd
+import numpy as np
 
-# Path to the image file
-image_path = 'car.jpg'
+class TableExtractor:
+    def __init__(self, image_path):
+        self.image_path = image_path
+        self.image = cv2.imread(self.image_path)
+        self.extracted_text = None
 
-# Read the image using OpenCV
-image = cv2.imread(image_path)
+    def preprocess_image(self):
+        gray_image = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+        _, binary_image = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
+        return binary_image
 
-# Convert the image to grayscale
-gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    def perform_ocr(self, binary_image):
+        self.extracted_text = pytesseract.image_to_string(binary_image)
 
-# Apply thresholding to convert the image to binary
-_, binary_image = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+    def save_to_csv(self, csv_path):
+        rows = [row.split('\n') for row in self.extracted_text.split('\n\n')]
+        df = pd.DataFrame(rows)
+        df.to_csv(csv_path, index=False)
+        print("Data extracted and saved to:", csv_path)
 
-# Use Pytesseract to perform OCR on the binary image
-text = pytesseract.image_to_string(binary_image)
+    def run_extraction(self, csv_path):
+        binary_image = self.preprocess_image()
+        self.perform_ocr(binary_image)
+        self.save_to_csv(csv_path)
 
-# Split the text into lines
-lines = text.split('\n')
-
-# Remove empty lines
-lines = [line for line in lines if line.strip()]
-
-
-# Split lines into rows based on whitespace
-rows = [line.split() for line in lines]
-
-# Create a DataFrame from the rows
-df = pd.DataFrame(rows)
-
-# Save DataFrame to an Excel file
-excel_file_path = 'table_data.xlsx'
-df.to_excel(excel_file_path, index=False)
-
-print("Table data saved to:", excel_file_path)
+if __name__ == "__main__":
+    # Replace 'image_path' and 'output_table.csv' with your image path and desired CSV file path
+    extractor = TableExtractor(image_path=r'\\asiapac.nom\home\userdata\MUM\HomeDrive24\chauhang\Desktop\Image to excel\page1.jpg')
+    extractor.run_extraction(csv_path='output_table.csv')
