@@ -1,4 +1,3 @@
-
 import cv2
 import pytesseract
 import pandas as pd
@@ -26,6 +25,9 @@ class TableExtractor:
                 extracted_text = self.perform_ocr(binary_image)
                 self.extracted_text.append(extracted_text)
                 print("Text extracted from:", file)
+                # Add 5 empty rows
+                for _ in range(5):
+                    self.extracted_text.append('')
 
     def save_to_csv(self, csv_path):
         rows = [row.split('\n') for text in self.extracted_text for row in text.split('\n\n')]
